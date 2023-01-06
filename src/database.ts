@@ -23,6 +23,7 @@ class Sqlite3Wrapper {
   async open(path: string) {
     const needInitialize = !existsSync(path);
     this._db = new Sqlite3(path);
+    this.db.get("PRAGMA foreign_keys = ON");
     return needInitialize;
   }
 
@@ -60,6 +61,7 @@ class DatabaseClient {
   async open() {
     this._db = new Sqlite3Wrapper();
     const path = process.env.NODE_ENV === "production" ? sqliteFiles.main : sqliteFiles.test;
+    // const path = ":memory:";
     const needInitialize = await this.db.open(path);
 
     if (needInitialize) {
@@ -96,30 +98,20 @@ class DatabaseClient {
   //   await this.db.executeUpdate("INSERT INTO tag(idx, uuid, name) VALUES(?, ?, ?)", [tag.index, uuid, tag.name]);
   // }
 
-  async setTags(tags: PartialSome<Tag, "uuid">[]): Promise<boolean> {
+  async setTags(tags: PartialSome<Tag, "uuid">[]): Promise<void> {
     // index 確認
     if (!tags.every((tag, i) => tag.index === i)) {
-      return false;
+      throw new Error("Illegal indices: " + tags);
     }
 
     // uuid がなければ新規作成
-    tags.forEach((tag) => {
-      if (tag.uuid === undefined) tag.uuid = uuidv4();
-    });
-
-    // 問題に関連づけられているタグを削除しないか確認
-    for (const currentTag of await this.getAllTags()) {
-      if (tags.some((tag) => tag.uuid === currentTag.uuid)) continue;
-      const count = await this.searchNumberOfQuestions(currentTag.uuid);
-      if (count !== 0) return false;
-    }
+    tags.forEach((tag) => (tag.uuid ??= uuidv4()));
 
     await this.db.executeQuery("DELETE FROM tag");
     await this.db.executeQuery(
       `INSERT INTO tag(idx, uuid, name) VALUES${tags.map(() => "(?, ?, ?)").join(",")}`,
       tags.flatMap((tag) => [tag.index, tag.uuid, tag.name])
     );
-    return true;
   }
 
   async getQuestion(uuid: UUID): Promise<Question | null> {
@@ -288,11 +280,6 @@ class DatabaseClient {
 
   private async setQuestionTag(questionUuid: UUID, tagUuids: UUID[]): Promise<void> {
     await this.db.executeUpdate("DELETE FROM question_tag WHERE question_uuid = ?", [questionUuid]);
-
-    // 存在しないタグを追加しようとしていたら消しておく
-    const tags = await this.getAllTags();
-    tagUuids = tagUuids.filter((tag) => tags.some((t) => t.uuid === tag));
-
     await Promise.all(
       tagUuids.map((tagUuid) =>
         this.db.executeUpdate("INSERT INTO question_tag(question_uuid, tag_uuid) VALUES(?, ?)", [questionUuid, tagUuid])
