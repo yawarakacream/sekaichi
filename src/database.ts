@@ -5,13 +5,11 @@ import { v4 as uuidv4 } from "uuid";
 import { isQuestion, isTag, isUuid, Question, Tag, UUID } from "./item-type";
 import { sample } from "./sample";
 import { PartialSome, removeLineBreaks } from "./utility";
+import tableSql from "./table.sql";
+import env from "./env";
 
-const sqliteFolder = `${process.cwd()}/sekaichi-data`;
-const sqliteFiles = {
-  main: `${sqliteFolder}/main.sqlite3`,
-  test: `${sqliteFolder}/test.sqlite3`,
-  table: `${sqliteFolder}/table.sql`,
-};
+export const sqliteFilePath = env.DATA_DIR + "/main.sqlite3";
+// const sqliteFilePath = ":memory:";
 
 class Sqlite3Wrapper {
   private _db: Sqlite3 | undefined;
@@ -60,22 +58,17 @@ class DatabaseClient {
 
   async open() {
     this._db = new Sqlite3Wrapper();
-    const path = process.env.NODE_ENV === "production" ? sqliteFiles.main : sqliteFiles.test;
-    // const path = ":memory:";
-    const needInitialize = await this.db.open(path);
+    const needInitialize = await this.db.open(sqliteFilePath);
 
     if (needInitialize) {
-      const initializer = await readFile(sqliteFiles.table, { encoding: "utf-8" }).then((buffer) => buffer.toString());
-      for (const sql of initializer.split(";")) {
+      for (const sql of tableSql.split(";")) {
         const tmp = removeLineBreaks(sql);
         if (tmp.length === 0) continue;
         await this.db.executeUpdate(sql);
       }
 
-      if (process.env.NODE_ENV !== "production") {
-        await this.setTags(sample.tags);
-        await Promise.all(sample.questions.map(({ uuid, ...rest }) => this._createQuestion(rest, uuid)));
-      }
+      await this.setTags(sample.tags);
+      await Promise.all(sample.questions.map(({ uuid, ...rest }) => this._createQuestion(rest, uuid)));
     }
   }
 
