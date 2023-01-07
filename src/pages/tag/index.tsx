@@ -93,18 +93,22 @@ export default function TagPage({ _tags }: Props) {
           {(tag, i) => (
             <TagContainer>
               <TagName defaultValue={tag.name} disabled={mode !== "edit"} ref={tagNameInputElements.current[i]} />
-              {mode === "edit" && tag.numberOfQuestions === 0 ? (
-                <DeleteButton value="削除" onClick={() => deleteTag(i)} />
-              ) : (
-                <span>問題数 {tag.numberOfQuestions} 問</span>
-              )}
+              <TagInfo>
+                {mode === "edit" && tag.numberOfQuestions === 0 ? (
+                  <DeleteButton value="削除" onClick={() => deleteTag(i)} />
+                ) : (
+                  <span>{tag.numberOfQuestions} 問</span>
+                )}
+              </TagInfo>
             </TagContainer>
           )}
         </UpDownList>
         {mode === "edit" && (
           <TagContainer>
             <TagName placeholder="新しいタグ" ref={newTagNameInputElement} />
-            <BasicButton value="追加" onClick={addNewTag} />
+            <TagInfo>
+              <BasicButton value="追加" onClick={addNewTag} />
+            </TagInfo>
           </TagContainer>
         )}
         <SubmitButtonContainer>
@@ -157,21 +161,28 @@ const TagContainer = styled.div`
   justify-content: space-between;
   border: 1px solid lightgray;
   border-radius: 4px;
+  gap: 1rem;
 `;
 
 const TagName = styled.input.attrs({ type: "text" })`
-  width: 30%;
+  flex: 1;
   border: none;
   border-top: 1px solid white;
   border-bottom: 1px solid black;
   outline: none;
   font: inherit;
+  color: black;
 
   &:disabled {
     background: white;
     border-color: white;
     color: inherit;
   }
+`;
+
+const TagInfo = styled.div`
+  text-align: right;
+  min-width: 4rem;
 `;
 
 const DeleteButton = styled(BasicButton)`
@@ -186,14 +197,6 @@ const DeleteButton = styled(BasicButton)`
     background-color: orangered;
     color: white;
   }
-`;
-
-const NewTag = styled.div`
-  width: 100%;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 `;
 
 export const getServerSideProps: GetServerSideProps<Props> = async () => {
