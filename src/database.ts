@@ -8,8 +8,7 @@ import { PartialSome, removeLineBreaks } from "./utility";
 import tableSql from "./table.sql";
 import env from "./env";
 
-export const sqliteFilePath = env.DATA_DIR + "/main.sqlite3";
-// const sqliteFilePath = ":memory:";
+const memoryMode: boolean = false;
 
 class Sqlite3Wrapper {
   private _db: Sqlite3 | undefined;
@@ -58,7 +57,7 @@ class DatabaseClient {
 
   async open() {
     this._db = new Sqlite3Wrapper();
-    const needInitialize = await this.db.open(sqliteFilePath);
+    const needInitialize = await this.db.open(memoryMode ? ":memory:" : env.SQLITE3_FILE);
 
     if (needInitialize) {
       for (const sql of tableSql.split(";")) {
