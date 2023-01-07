@@ -182,11 +182,6 @@ const TagName = styled.input.attrs({ type: "text" })`
     border-color: white;
     color: black;
   }
-
-  // for iOS Safari
-  border-radius: 0;
-  line-height: normal;
-  -webkit-appearance: none;
 `;
 
 const TagInfo = styled.div`
