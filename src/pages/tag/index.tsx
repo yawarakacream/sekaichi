@@ -162,6 +162,11 @@ const TagContainer = styled.div`
   border: 1px solid lightgray;
   border-radius: 4px;
   gap: 1rem;
+
+  @media (max-width: 600px) {
+    height: 2rem;
+    padding: 2px 4px;
+  }
 `;
 
 const TagName = styled.input.attrs({ type: "text" })`
@@ -178,6 +183,11 @@ const TagName = styled.input.attrs({ type: "text" })`
     border-color: white;
     color: inherit;
   }
+
+  // for iOS Safari
+  border-radius: 0;
+  line-height: normal;
+  -webkit-appearance: none;
 `;
 
 const TagInfo = styled.div`

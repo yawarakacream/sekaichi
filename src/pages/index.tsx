@@ -44,6 +44,10 @@ const LinkCard = styled(Link)`
   &:hover {
     opacity: 50%;
   }
+
+  @media (max-width: 600px) {
+    font-size: 1rem;
+  }
 `;
 
 export const getServerSideProps: GetServerSideProps<Props> = async () => {
