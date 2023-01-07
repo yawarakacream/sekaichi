@@ -180,7 +180,6 @@ const TagName = styled.input.attrs({ type: "text" })`
   &:disabled {
     background: white;
     border-color: white;
-    color: black;
   }
 `;
 

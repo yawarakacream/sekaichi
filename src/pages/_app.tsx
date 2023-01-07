@@ -17,10 +17,16 @@ const GlobalStyles = createGlobalStyle`
     overflow-y: scroll;
   }
 
+  // for iOS Safari
   input {
-    // for iOS Safari
     border-radius: 0;
     line-height: normal;
     -webkit-appearance: none;
+
+    &[type="text"] {
+      padding: 1px 2px;
+      -webkit-text-fill-color: black;
+      opacity: 1;
+    }
   }
 `;
