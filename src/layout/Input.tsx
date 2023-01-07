@@ -68,6 +68,8 @@ export const BasicButton = styled.input.attrs({ type: "button" })`
     opacity: 50%;
     pointer-events: none;
   }
+
+  -webkit-appearance: none;
 `;
 
 export const SubmitButton = styled(BasicButton)`

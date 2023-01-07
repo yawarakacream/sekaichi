@@ -181,6 +181,8 @@ const TagName = styled.input.attrs({ type: "text" })`
   &:disabled {
     background: white;
     border-color: white;
+    opacity: 1;
+    -webkit-text-fill-color: black;
   }
 `;
 
