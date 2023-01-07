@@ -33,6 +33,13 @@ const Container = styled.main`
   display: flex;
   flex-direction: column;
   align-items: center;
+
+  font-family: sans-serif;
+  font-size: 16px;
+
+  @media (max-width: 600px) {
+    font-size: 14px;
+  }
 `;
 
 const Header = styled.header`
