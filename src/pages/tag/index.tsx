@@ -1,11 +1,11 @@
 import { GetServerSideProps } from "next";
-import { createRef, ReactElement, useCallback, useEffect, useRef, useState } from "react";
+import { createRef, useCallback, useRef, useState } from "react";
 import styled from "styled-components";
 import { useFetcher } from "../../api";
 import { TagPost } from "../../api-impl";
 import { connectDatabase } from "../../database";
 import { Tag } from "../../item-type";
-import { BasicButton, SubmitButton, TextInput } from "../../layout/Input";
+import { BasicButton, SubmitButton } from "../../layout/Input";
 import Layout, { PageTitle } from "../../layout/Layout";
 import UpDownList from "../../layout/UpDownList";
 import { PartialSome } from "../../utility";
@@ -170,6 +170,7 @@ const TagContainer = styled.div`
 
 const TagName = styled.input.attrs({ type: "text" })`
   flex: 1;
+  padding: 1px 0;
   border: none;
   border-top: 1px solid white;
   border-bottom: 1px solid black;
