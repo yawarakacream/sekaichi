@@ -165,7 +165,6 @@ const TagContainer = styled.div`
 
   @media (max-width: 600px) {
     height: 2rem;
-    padding: 2px 4px;
   }
 `;
 
@@ -181,7 +180,7 @@ const TagName = styled.input.attrs({ type: "text" })`
   &:disabled {
     background: white;
     border-color: white;
-    color: inherit;
+    color: black;
   }
 
   // for iOS Safari
