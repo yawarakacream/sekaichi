@@ -8,8 +8,6 @@ import { PartialSome, removeLineBreaks } from "./utility";
 import tableSql from "./table.sql";
 import env from "./env";
 
-const memoryMode: boolean = false;
-
 class Sqlite3Wrapper {
   private _db: Sqlite3 | undefined;
   private get db(): Sqlite3 {
@@ -57,7 +55,8 @@ class DatabaseClient {
 
   async open() {
     this._db = new Sqlite3Wrapper();
-    const needInitialize = await this.db.open(memoryMode ? ":memory:" : env.SQLITE3_FILE);
+    const needInitialize = await this.db.open(env.SQLITE3_FILE);
+    // const needInitialize = await this.db.open(":memory:");
 
     if (needInitialize) {
       for (const sql of tableSql.split(";")) {
@@ -96,13 +95,29 @@ class DatabaseClient {
       throw new Error("Illegal indices: " + tags);
     }
 
-    // uuid がなければ新規作成
-    tags.forEach((tag) => (tag.uuid ??= uuidv4()));
+    const currentTags = await this.getAllTags();
+    await Promise.all(
+      currentTags
+        .filter((tag) => tags.every((t) => tag.uuid !== t.uuid))
+        .map((tag) => this.db.executeUpdate("DELETE FROM tag WHERE uuid = ?", [tag.uuid]))
+    );
 
-    await this.db.executeQuery("DELETE FROM tag");
-    await this.db.executeQuery(
-      `INSERT INTO tag(idx, uuid, name) VALUES${tags.map(() => "(?, ?, ?)").join(",")}`,
-      tags.flatMap((tag) => [tag.index, tag.uuid, tag.name])
+    await Promise.all(
+      tags.map(async (tag) => {
+        if (currentTags.some((t) => tag.uuid === t.uuid)) {
+          await this.db.executeUpdate("UPDATE tag SET idx = ?, name = ? WHERE uuid = ?", [
+            tag.index,
+            tag.name,
+            tag.uuid,
+          ]);
+        } else {
+          await this.db.executeQuery(`INSERT INTO tag(idx, uuid, name) VALUES (?, ?, ?)`, [
+            tag.index,
+            tag.uuid ?? uuidv4(),
+            tag.name,
+          ]);
+        }
+      })
     );
   }
 
