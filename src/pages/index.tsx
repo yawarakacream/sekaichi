@@ -1,16 +1,9 @@
-import { GetServerSideProps } from "next";
 import Link from "next/link";
 import styled from "styled-components";
-import { Tag, Practice } from "../item-type";
 import { CardContainer } from "../layout/Card";
 import Layout, { PageTitle } from "../layout/Layout";
 
-interface Props {
-  tags: Tag[];
-  practices: Practice[];
-}
-
-export default function Home({ tags, practices }: Props) {
+export default function Home() {
   return (
     <Layout title={undefined}>
       <PageTitle>タグ</PageTitle>
@@ -21,6 +14,11 @@ export default function Home({ tags, practices }: Props) {
       <CardContainer cardWidth={128} cardHeight={64}>
         <LinkCard href="/question">検索・編集</LinkCard>
         <LinkCard href="/question/edit">作成</LinkCard>
+      </CardContainer>
+      <PageTitle>模試</PageTitle>
+      <CardContainer cardWidth={128} cardHeight={64}>
+        <LinkCard href="/examination">確認</LinkCard>
+        <LinkCard href="/examination/create">作成</LinkCard>
       </CardContainer>
     </Layout>
   );
@@ -49,12 +47,3 @@ const LinkCard = styled(Link)`
     font-size: 1rem;
   }
 `;
-
-export const getServerSideProps: GetServerSideProps<Props> = async () => {
-  const tags: Tag[] = [];
-
-  const practices: Practice[] = [];
-
-  const props: Props = { tags, practices };
-  return { props };
-};

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React, { ChangeEvent, forwardRef, memo, MutableRefObject, useCallback, useEffect, useId, useState } from "react";
 import styled from "styled-components";
 
@@ -32,9 +33,10 @@ export const NumberInput = styled.input.attrs({ type: "number" })`
 `;
 
 export const TextArea = styled.textarea`
-  width: calc(100% - 8px * 2);
+  width: 100%;
   margin: 0;
   padding: 4px 8px;
+  box-sizing: border-box;
   display: block;
   border: 1px solid lightgray;
   border-radius: 4px;
@@ -43,6 +45,25 @@ export const TextArea = styled.textarea`
 
   &:invalid {
     border-color: red;
+  }
+`;
+
+export const InputContainer = styled.div<{ label: string }>`
+  margin: 1em 0;
+  display: flex;
+  gap: 1rem;
+
+  &:before {
+    display: flex;
+    align-items: center;
+    width: 64px;
+    content: "${(p) => p.label}";
+    color: blue;
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 `;
 
@@ -63,8 +84,7 @@ export const BasicButton = styled.input.attrs({ type: "button" })`
     opacity: 50%;
   }
 
-  &:disabled,
-  form:invalid & {
+  &:disabled {
     opacity: 50%;
     pointer-events: none;
   }
@@ -76,24 +96,62 @@ export const SubmitButton = styled(BasicButton)`
   border-color: royalblue;
   background-color: royalblue;
   color: white;
+
+  form:invalid & {
+    opacity: 50%;
+    pointer-events: none;
+  }
+`;
+
+export const LinkButton = styled(Link)`
+  margin: 0;
+  padding: 4px 12px;
+  border: 1px solid orange;
+  border-radius: 4px;
+  outline: none;
+  background-color: white;
+  font: inherit;
+  color: orange;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+
+  transition: background-color 0.1s ease, color 0.1s ease;
+
+  &:hover {
+    background-color: orange;
+    color: white;
+  }
 `;
 
 interface ToggleButtonProps {
+  checked?: boolean;
+  onChange?: () => void;
   children: string;
+  style?: "positive" | "negative";
 }
 
-export const ToggleButton = forwardRef<HTMLInputElement, ToggleButtonProps>(({ children }, ref) => {
-  const id = useId();
+export const ToggleButton = forwardRef<HTMLInputElement, ToggleButtonProps>(
+  ({ checked, onChange, children, style = "positive" }, ref) => {
+    const id = useId();
 
-  return (
-    <ToggleButtonContainer>
-      <input id={id} type="checkbox" ref={ref} />
-      <label htmlFor={id}>{children}</label>
-    </ToggleButtonContainer>
-  );
-});
+    return (
+      <ToggleButtonContainer type={style}>
+        <input
+          id={id}
+          type="checkbox"
+          ref={ref}
+          checked={checked}
+          onChange={onChange}
+          readOnly={checked !== undefined && onChange === undefined ? true : undefined}
+        />
+        <label htmlFor={id}>{children}</label>
+      </ToggleButtonContainer>
+    );
+  }
+);
 
-const ToggleButtonContainer = styled.span`
+const ToggleButtonContainer = styled.span<{ type: "positive" | "negative" }>`
   & > input {
     display: none;
   }
@@ -110,8 +168,10 @@ const ToggleButtonContainer = styled.span`
   }
 
   & > input:checked + label {
-    background-color: lightcyan;
-    border: 1px solid darkgray;
+    background-color: ${(p) => (p.type === "positive" ? "lightcyan" : "white")};
+    border: 1px solid ${(p) => (p.type === "positive" ? "darkgray" : "lightgray")};
+    color: ${(p) => (p.type === "positive" ? "black" : "lightgray")};
+    text-decoration-line: ${(p) => (p.type === "positive" ? "none" : "line-through")};
   }
 `;
 
@@ -142,8 +202,9 @@ const RadioButtonContainer = styled.div`
   }
 
   & > label {
-    width: calc(100% - 1px * 2);
-    height: calc(100% - 1px * 2);
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
 
     display: flex;
     align-items: center;
@@ -158,6 +219,66 @@ const RadioButtonContainer = styled.div`
   & > input:checked + label {
     background-color: lightcyan;
     border: 1px solid darkgray;
+  }
+`;
+
+interface ArrowButtonProps {
+  onClick?: () => void;
+  children: string;
+  type: "left" | "right";
+}
+
+export const ArrowButton = memo(({ onClick, children, type }: ArrowButtonProps) => {
+  const id = useId();
+
+  return (
+    <ArrowButtonContainer type={type}>
+      <input id={id} type="button" onClick={onClick} />
+      <label htmlFor={id}>{children}</label>
+    </ArrowButtonContainer>
+  );
+});
+
+const ArrowButtonContainer = styled.span<{ type: "left" | "right" }>`
+  & > input {
+    display: none;
+  }
+
+  & > label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    ${(p) => `padding-${p.type}`}: 24px;
+    background-color: white;
+    border: 1px solid green;
+    border-radius: 4px;
+    overflow: none;
+    user-select: none;
+    cursor: pointer;
+    color: green;
+
+    transition: background-color 0.1s ease, color 0.1s ease;
+
+    &:before {
+      position: absolute;
+      ${(p) => `${p.type}`}: 10px;
+      width: 0.6rem;
+      height: 0.6rem;
+      border-left: 2px solid green;
+      border-top: 2px solid green;
+      transform: rotate(${(p) => (p.type === "left" ? "-45deg" : "135deg")});
+      content: "";
+    }
+
+    &:hover {
+      background-color: green;
+      color: white;
+
+      &:before {
+        border-color: white;
+      }
+    }
   }
 `;
 
@@ -259,8 +380,9 @@ const ImageInputContainerForSelectedImage = styled(ImageInputContainerAbstract)`
   padding-right: calc((1.6rem - 1px * 2) / 2);
 
   & > label {
-    width: calc(100% - (4px + 1px) * 2);
+    width: 100%;
     padding: 4px;
+    box-sizing: border-box;
   }
 
   & > button {
@@ -290,7 +412,8 @@ const ImageInputContainerForNoImage = styled(ImageInputContainerAbstract)`
   height: 100%;
 
   & > label {
-    width: calc(100% - (8px + 1px) * 2);
+    width: 100%;
     padding: 4px 8px;
+    box-sizing: border-box;
   }
 `;

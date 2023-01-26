@@ -1,15 +1,15 @@
 import { GetServerSideProps } from "next";
 import Link from "next/link";
-import { useRouter } from "next/router";
-import { createRef, useCallback, useEffect, useRef, useState } from "react";
+import { createRef, useCallback, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { useFetcher } from "../../api";
 import { QuestionSearchPost } from "../../api-impl";
 import { connectDatabase } from "../../database";
-import { Question, Tag } from "../../item-type";
-import { Card, CardContainer } from "../../layout/Card";
+import { Question, Tag, UUID } from "../../item-type";
+import { CardContainer } from "../../layout/Card";
 import { SubmitButton, TextInput, ToggleButton } from "../../layout/Input";
 import Layout, { PageTitle } from "../../layout/Layout";
+import QuestionCard from "../../layout/QuestionCard";
 import { formatDate } from "../../utility";
 
 interface Props {
@@ -17,10 +17,14 @@ interface Props {
 }
 
 export default function QuestionPage({ tags }: Props) {
-  const uuidToTag = tags.reduce((acc, curr) => {
-    acc[curr.uuid] = curr;
-    return acc;
-  }, {} as { [uuid: string]: Tag | undefined });
+  const uuidToTag: { [uuid in UUID]?: Tag } = useMemo(
+    () =>
+      tags.reduce((acc, curr) => {
+        acc[curr.uuid] = curr;
+        return acc;
+      }, {} as { [uuid in UUID]?: Tag }),
+    [tags]
+  );
 
   const [isFetching, fetch] = useFetcher();
   const [searchResult, setSearchResult] = useState<Question[] | undefined>(undefined);
@@ -55,7 +59,7 @@ export default function QuestionPage({ tags }: Props) {
       })
       .map((tag) => tag.uuid);
 
-    const { statusCode, body } = await fetch(QuestionSearchPost, { tags: searchTags });
+    const { statusCode, body } = await fetch(QuestionSearchPost, { tagsIncluded: searchTags, tagsExcluded: [] });
     if (statusCode !== 200) throw new Error(`status code: ${statusCode}`);
 
     const { questions } = body;
@@ -97,29 +101,26 @@ export default function QuestionPage({ tags }: Props) {
                   return str.replaceAll(freewordsRegex, (s) => `<strong>${s}</strong>`);
                 };
                 return (
-                  <QuestionCard key={question.uuid}>
-                    <QuestionCardStatement
-                      dangerouslySetInnerHTML={{ __html: makeFreewordsStrong(question.statement) }}
-                    />
-                    {question.figure && <QuestionCardFigure src={question.figure} />}
-                    <QuestionCardSelectionContainer>
-                      {question.selections.map((s, i) => (
-                        <QuestionCardSelection key={i} dangerouslySetInnerHTML={{ __html: makeFreewordsStrong(s) }} />
-                      ))}
-                    </QuestionCardSelectionContainer>
-                    <QuestionCardInfoContainer>
-                      <QuestionCardInfo>
-                        <span>{question.tags.map((tag) => uuidToTag[tag]!.name).join(", ")}</span>
-                        <span>
-                          正答 {question.answer + 1} / 配点 {question.point}
-                        </span>
-                      </QuestionCardInfo>
-                      <QuestionCardInfo>
-                        <span>{formatDate(new Date(question.createdAt))}</span>
-                        <QuestionCardEditButton href={`/question/edit/${question.uuid}`}>編集</QuestionCardEditButton>
-                      </QuestionCardInfo>
-                    </QuestionCardInfoContainer>
-                  </QuestionCard>
+                  <QuestionCard
+                    key={question.uuid}
+                    statement={makeFreewordsStrong(question.statement)}
+                    figure={question.figure}
+                    selections={question.selections.map((s) => ({ text: makeFreewordsStrong(s) }))}
+                    footer={
+                      <QuestionCardInfoContainer>
+                        <QuestionCardInfo>
+                          <span>{question.tags.map((tag) => uuidToTag[tag]!.name).join(", ")}</span>
+                          <span>
+                            正答 {question.answer + 1} / 配点 {question.point}
+                          </span>
+                        </QuestionCardInfo>
+                        <QuestionCardInfo>
+                          <span>{formatDate(new Date(question.createdAt))}</span>
+                          <QuestionCardEditButton href={`/question/edit/${question.uuid}`}>編集</QuestionCardEditButton>
+                        </QuestionCardInfo>
+                      </QuestionCardInfoContainer>
+                    }
+                  />
                 );
               })}
             </CardContainer>
@@ -158,39 +159,6 @@ const Divider = styled.div`
   background-color: lightgray;
 `;
 
-const QuestionCard = styled(Card)`
-  position: relative;
-  padding: 4px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const QuestionCardStatement = styled.div`
-  min-height: 3rem;
-  flex: 1;
-  white-space: pre-wrap;
-`;
-
-const QuestionCardFigure = styled.img`
-  width: 100%;
-  object-fit: cover;
-`;
-
-const QuestionCardSelectionContainer = styled.div`
-  height: fit-content;
-  padding-top: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const QuestionCardSelection = styled.div`
-  padding: 1px 8px;
-  border: 1px solid lightgray;
-  border-radius: 4px;
-`;
-
 const QuestionCardInfoContainer = styled.div`
   width: 100%;
   display: flex;
@@ -221,7 +189,7 @@ const QuestionCardEditButton = styled(Link)`
   }
 `;
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps<Props> = async () => {
   return await connectDatabase(async (client) => {
     const tags: Tag[] = await client.getAllTags();
     const props: Props = { tags };

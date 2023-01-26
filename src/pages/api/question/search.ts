@@ -2,8 +2,8 @@ import { handleApi, routeApi } from "../../../api";
 import { QuestionSearchPost } from "../../../api-impl";
 import { connectDatabase } from "../../../database";
 
-const post = handleApi(QuestionSearchPost, async ({ body: { tags } }) => {
-  const questions = await connectDatabase((client) => client.searchQuestions(tags));
+const post = handleApi(QuestionSearchPost, async ({ body: { tagsIncluded, tagsExcluded } }) => {
+  const questions = await connectDatabase((client) => client.searchQuestions(tagsIncluded, tagsExcluded));
   return { statusCode: 200, body: { questions } };
 });
 

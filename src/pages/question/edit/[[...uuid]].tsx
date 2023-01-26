@@ -8,6 +8,7 @@ import { connectDatabase } from "../../../database";
 import { isQuestionWithoutUuid, NUMBER_OF_SELECTIONS, Question, Tag } from "../../../item-type";
 import {
   ImageInput,
+  InputContainer,
   NumberInput,
   RadioButton,
   SubmitButton,
@@ -181,25 +182,6 @@ const Form = styled.form<{ isFetching: boolean }>`
     pointer-events: ${(p) => (p.isFetching ? "initial" : "none")};
     opacity: ${(p) => (p.isFetching ? 1 : 0)};
     transition: opacity 0.1s ease 0.1s;
-  }
-`;
-
-const InputContainer = styled.div<{ label: string }>`
-  margin: 1em 0;
-  display: flex;
-  gap: 1rem;
-
-  &:before {
-    display: flex;
-    align-items: center;
-    width: 64px;
-    content: "${(p) => p.label}";
-    color: blue;
-  }
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 0.5rem;
   }
 `;
 

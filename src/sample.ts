@@ -1,4 +1,4 @@
-import { Tag, Question } from "./item-type";
+import { Tag, Question, Examination, Exampart, Examquestion } from "./item-type";
 
 const diffOfDay = 1000 * 60 * 60 * 24;
 
@@ -64,6 +64,42 @@ export namespace sample {
       point: 1,
       figure: null,
       createdAt: 1640995200000 + diffOfDay * 3,
+    },
+  ];
+
+  export const examparts: Exampart[] = [
+    {
+      uuid: "a1ca098f-edac-4179-8467-3621ca509bc3",
+      tags: ["39f0689a-9fdc-4886-8d0c-2e24c4686aa7", "a078ee26-50f0-4435-a468-689d35bda6e4"],
+    },
+    {
+      uuid: "5434059a-40e4-4c40-8b86-28856bb2db05",
+      tags: ["39f0689a-9fdc-4886-8d0c-2e24c4686aa7", "9945df35-84f9-4b4b-a49a-f348b383006b"],
+    },
+  ];
+
+  export const examquestions: Examquestion[] = [
+    {
+      exampart: examparts[0].uuid,
+      question: "69d191a5-a893-45ae-8d4b-02d381f58e44",
+      answerOrder: [3, 2, 1, 0],
+      examineeAnswer: 1,
+    },
+    {
+      exampart: examparts[1].uuid,
+      question: "0708c411-da03-402f-b38f-0d9c4391bbc2",
+      answerOrder: [3, 2, 1, 0],
+      examineeAnswer: 1,
+    },
+  ];
+
+  export const examinations: Examination[] = [
+    {
+      uuid: "35ee3d4d-f126-40e8-81fc-5e4e113fd6c2",
+      name: "いち",
+      excludedTags: ["3ce9f161-4e71-4b87-a775-cb7f5b12b2fa"],
+      examparts: examparts,
+      answeredAt: 1640995200000,
     },
   ];
 }

@@ -1,8 +1,21 @@
 import { existsSync } from "fs";
-import { readFile } from "fs/promises";
 import { Database as Sqlite3 } from "sqlite3";
 import { v4 as uuidv4 } from "uuid";
-import { isQuestion, isTag, isUuid, Question, Tag, UUID } from "./item-type";
+import {
+  Examination,
+  ExaminationScore,
+  Exampart,
+  Examquestion,
+  isExamination,
+  isExampart,
+  isExamquestion,
+  isQuestion,
+  isTag,
+  isUuid,
+  Question,
+  Tag,
+  UUID,
+} from "./item-type";
 import { sample } from "./sample";
 import { PartialSome, removeLineBreaks } from "./utility";
 import tableSql from "./table.sql";
@@ -67,6 +80,7 @@ class DatabaseClient {
 
       await this.setTags(sample.tags);
       await Promise.all(sample.questions.map(({ uuid, ...rest }) => this._createQuestion(rest, uuid)));
+      await this.insertExamination(sample.examinations[0], sample.examquestions);
     }
   }
 
@@ -84,10 +98,6 @@ class DatabaseClient {
     });
     return tags;
   }
-
-  // private async _createTag(tag: Omit<Tag, "uuid">, uuid: UUID): Promise<void> {
-  //   await this.db.executeUpdate("INSERT INTO tag(idx, uuid, name) VALUES(?, ?, ?)", [tag.index, uuid, tag.name]);
-  // }
 
   async setTags(tags: PartialSome<Tag, "uuid">[]): Promise<void> {
     // index 確認
@@ -145,35 +155,10 @@ class DatabaseClient {
     return question;
   }
 
-  // async getAllQuestions(): Promise<Question[]> {
-  //   const result = await this.db.executeQuery(
-  //     `SELECT statement, selections, answer, point, figure, created_at FROM question`,
-  //     []
-  //   );
-  //   const questions: Question[] = await Promise.all(
-  //     result.map(async (row) => {
-  //       const uuid = row.uuid;
-  //       if (!isUuid(uuid)) throw new Error();
-  //       const question: Record<keyof Question, unknown> = {
-  //         uuid,
-  //         tags: await this.getQuestionTag(uuid),
-  //         statement: row.statement,
-  //         selections: JSON.parse(row.selections),
-  //         answer: row.answer,
-  //         point: row.point,
-  //         figure: row.figure,
-  //         createdAt: row.created_at,
-  //       };
-  //       if (!isQuestion(question)) throw new Error();
-  //       return question;
-  //     })
-  //   );
-  //   return questions;
-  // }
-
-  async searchQuestions(tags: UUID[]): Promise<Question[]> {
+  async searchQuestions(tagsIncluded: UUID[], tagsExcluded: UUID[]): Promise<Question[]> {
     let result: any[];
-    if (tags.length === 0) {
+    if (tagsIncluded.length === 0) {
+      if (tagsExcluded.length > 0) throw new Error();
       // どのタグもつけられていない問題を検索する
       result = await this.db.executeQuery(
         `
@@ -193,15 +178,34 @@ class DatabaseClient {
             q.uuid, q.statement, q.selections, q.answer, q.point, q.figure, q.created_at
           FROM
             question AS q
-            JOIN question_tag AS qt ON q.uuid = qt.question_uuid
           WHERE
-            qt.tag_uuid IN (${tags.map(() => "?").join(",")})
-          GROUP BY
-            q.uuid
-          HAVING
-            COUNT(q.uuid) = ?
+            EXISTS (
+              SELECT
+                qt.question_uuid
+              FROM
+                question_tag AS qt
+              WHERE
+                q.uuid = qt.question_uuid
+                AND
+                qt.tag_uuid IN (${tagsIncluded.map(() => "?").join(",")})
+              GROUP BY
+                qt.question_uuid
+              HAVING
+                COUNT(qt.question_uuid) = ?
+            )
+            AND
+            NOT EXISTS (
+              SELECT
+                qt.question_uuid
+              FROM
+                question_tag AS qt
+              WHERE
+                q.uuid = qt.question_uuid
+                AND
+                qt.tag_uuid IN (${tagsExcluded.map(() => "?").join(",")})
+            )
       `,
-        [...tags, tags.length]
+        [...tagsIncluded, tagsIncluded.length, ...tagsExcluded]
       );
     }
 
@@ -292,6 +296,256 @@ class DatabaseClient {
         this.db.executeUpdate("INSERT INTO question_tag(question_uuid, tag_uuid) VALUES(?, ?)", [questionUuid, tagUuid])
       )
     );
+  }
+
+  async getExamination(uuid: UUID): Promise<Examination | null> {
+    const result = await this.db.executeQuery("SELECT uuid, name, answered_at FROM examination WHERE uuid = ?", [uuid]);
+    if (result === undefined) return null;
+
+    const row = result[0];
+    if (row === undefined) return null;
+
+    const [excludedTags, examparts] = await Promise.all([
+      this.getExaminationExcludedTags(uuid),
+      this.getExamparts(uuid),
+    ]);
+
+    if (examparts === null || examparts.length <= 0) throw new Error();
+
+    const examination: Record<keyof Examination, unknown> = {
+      uuid: row.uuid,
+      name: row.name,
+      excludedTags,
+      examparts,
+      answeredAt: row.answered_at,
+    };
+    if (!isExamination(examination)) throw new Error();
+    return examination;
+  }
+
+  private async getExaminationExcludedTags(uuid: UUID): Promise<UUID[]> {
+    const result = await this.db.executeQuery(
+      "SELECT tag_uuid FROM examination_excludedtags WHERE examination_uuid = ?",
+      [uuid]
+    );
+    return result.map((row) => {
+      const tagUuid = row.tag_uuid;
+      if (!isUuid(tagUuid)) throw new Error();
+      return tagUuid;
+    });
+  }
+
+  private async getExamparts(examinationUuid: UUID): Promise<Exampart[] | null> {
+    const result = await this.db.executeQuery("SELECT uuid FROM exampart WHERE examination_uuid = ?", [
+      examinationUuid,
+    ]);
+    if (result === undefined) return null;
+
+    return await Promise.all(
+      result.map(async (row) => {
+        const uuid = row.uuid;
+        if (!isUuid(uuid)) throw new Error();
+
+        const exampart: Record<keyof Exampart, unknown> = {
+          uuid: row.uuid,
+          tags: await this.getExampartTags(uuid),
+        };
+        if (!isExampart(exampart)) throw new Error();
+        return exampart;
+      })
+    );
+  }
+
+  private async getExampartTags(exampartUuid: UUID): Promise<UUID[]> {
+    const result = await this.db.executeQuery("SELECT tag_uuid FROM exampart_tag WHERE exampart_uuid = ?", [
+      exampartUuid,
+    ]);
+    return result.map((row) => {
+      const tagUuid = row.tag_uuid;
+      if (!isUuid(tagUuid)) throw new Error();
+      return tagUuid;
+    });
+  }
+
+  async getAllExaminations(): Promise<Examination[]> {
+    const result = await this.db.executeQuery("SELECT uuid FROM examination");
+    const examinations = await Promise.all(
+      result.map(async ({ uuid }) => {
+        if (!isUuid(uuid)) throw new Error();
+        const examination = await this.getExamination(uuid);
+        if (examination === null) throw new Error();
+        return examination;
+      })
+    );
+    return examinations.sort((a, b) => {
+      if (a.answeredAt === b.answeredAt) return a.uuid.localeCompare(b.uuid);
+      if (a.answeredAt === null) return 1;
+      if (b.answeredAt === null) return -1;
+      return a.answeredAt - b.answeredAt;
+    });
+  }
+
+  async getExamquestions(examinationUuid: UUID): Promise<[Examquestion[], Question[]]> {
+    const result = await this.db.executeQuery(
+      `
+        SELECT
+          exampart_uuid, question_uuid, idx, answer_order, examinee_answer
+        FROM
+          examquestion AS que
+          JOIN exampart AS part ON que.exampart_uuid = part.uuid
+          JOIN examination AS exam ON part.examination_uuid = exam.uuid
+        WHERE
+          exam.uuid = ?
+      `,
+      [examinationUuid]
+    );
+
+    const usedQuestionUuids = new Set<string>();
+
+    const examquestions = result
+      .sort((rowA, rowB) => Number.parseInt(rowA.idx) - Number.parseInt(rowB.idx))
+      .map((row) => {
+        const examquestion: Record<keyof Examquestion, unknown> = {
+          exampart: row.exampart_uuid,
+          question: row.question_uuid,
+          answerOrder: JSON.parse(row.answer_order),
+          examineeAnswer: row.examinee_answer,
+        };
+        if (!isExamquestion(examquestion)) throw new Error();
+        usedQuestionUuids.add(examquestion.question);
+        return examquestion;
+      });
+
+    const questions = await Promise.all(
+      Array.from(usedQuestionUuids).map(async (questionUuid) => {
+        const question = await this.getQuestion(questionUuid);
+        if (question === null) throw new Error();
+        return question;
+      })
+    );
+
+    return [examquestions, questions];
+  }
+
+  async insertExamination(examination: Examination, questions: Examquestion[]): Promise<void> {
+    await this.db.executeUpdate("INSERT INTO examination(uuid, name, answered_at) VALUES(?, ?, ?)", [
+      examination.uuid,
+      examination.name,
+      examination.answeredAt,
+    ]);
+    await Promise.all(
+      examination.excludedTags.map(async (excludedTagUuid) => {
+        await this.db.executeUpdate("INSERT INTO examination_excludedtags(examination_uuid, tag_uuid) VALUES(?, ?)", [
+          examination.uuid,
+          excludedTagUuid,
+        ]);
+      })
+    );
+    await Promise.all(
+      examination.examparts.map(async (exampart) => {
+        await this.db.executeUpdate("INSERT INTO exampart(uuid, examination_uuid) VALUES(?, ?)", [
+          exampart.uuid,
+          examination.uuid,
+        ]);
+        await Promise.all(
+          exampart.tags.map(async (exampartTagUuid) => {
+            await this.db.executeUpdate("INSERT INTO exampart_tag(exampart_uuid, tag_uuid) VALUES(?, ?)", [
+              exampart.uuid,
+              exampartTagUuid,
+            ]);
+          })
+        );
+      })
+    );
+    await Promise.all(
+      questions.map(
+        async (examquestion, index) =>
+          await this.db.executeUpdate(
+            "INSERT INTO examquestion(exampart_uuid, question_uuid, idx, answer_order, examinee_answer) VALUES(?, ?, ?, ?, ?)",
+            [
+              examquestion.exampart,
+              examquestion.question,
+              index,
+              JSON.stringify(examquestion.answerOrder),
+              examquestion.examineeAnswer,
+            ]
+          )
+      )
+    );
+  }
+
+  async getExaminationScore(examinationUuid: UUID): Promise<ExaminationScore> {
+    const result = await this.db.executeQuery(
+      `
+        SELECT
+          part.uuid, question.answer, question.point, examque.examinee_answer
+        FROM
+          examquestion as examque
+          JOIN exampart AS part ON examque.exampart_uuid = part.uuid
+          JOIN question ON examque.question_uuid = question.uuid
+        WHERE
+          part.examination_uuid = ?
+      `,
+      [examinationUuid]
+    );
+
+    const partToScores: { [part in UUID]?: [number, number] } = {};
+    result.forEach((row) => {
+      const uuid = row.uuid;
+      if (!isUuid(uuid)) throw new Error();
+      const answer = row.answer;
+      if (typeof answer !== "number") throw new Error();
+      const point = row.point;
+      if (typeof point !== "number") throw new Error();
+      const examineeAnswer = row.examinee_answer;
+      if (typeof examineeAnswer !== "number") throw new Error();
+
+      partToScores[uuid] ??= [0, 0];
+      partToScores[uuid]![0] += point;
+      if (answer === examineeAnswer) {
+        partToScores[uuid]![1] += point;
+      }
+    });
+
+    const parts = Object.entries(partToScores).map(([k, v]) => {
+      if (v === undefined) throw new Error();
+      return { uuid: k, max: v[0], examinee: v[1] };
+    });
+    const sum = parts.reduce(
+      (acc, curr) => {
+        acc.max += curr.max;
+        acc.examinee += curr.examinee;
+        return acc;
+      },
+      { max: 0, examinee: 0 }
+    );
+
+    const scores: ExaminationScore = { sum, parts };
+    return scores;
+  }
+
+  async setExaminationAnswer(examinationUuid: UUID, answers: (0 | 1 | 2 | 3)[]): Promise<void> {
+    const examquestions = await this.getExamquestions(examinationUuid).then((v) => v[0]);
+    if (examquestions.length !== answers.length) throw new Error();
+
+    await Promise.all(
+      examquestions.map(async (eq, i) => {
+        await this.db.executeUpdate(
+          `
+            UPDATE
+              examquestion
+            SET
+              examinee_answer = ?
+            WHERE
+              exampart_uuid = ?
+              AND
+              idx = ?
+          `,
+          [answers[i], eq.exampart, i]
+        );
+      })
+    );
+    await this.db.executeUpdate("UPDATE examination SET answered_at = ? WHERE uuid = ?", [Date.now(), examinationUuid]);
   }
 }
 
