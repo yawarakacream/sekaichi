@@ -112,7 +112,7 @@ export namespace sample {
   export const examinations: Examination[] = [
     {
       uuid: "2e291fb7-bd3e-4b0b-8933-29e68c154740",
-      name: "2級 例題",
+      name: "2級 例題集",
       excludedTags: ["3ce9f161-4e71-4b87-a775-cb7f5b12b2fa"],
       examparts: examparts,
       answeredAt: 1640995200000 + diffOfDay * 7,
