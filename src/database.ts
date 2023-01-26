@@ -497,7 +497,7 @@ class DatabaseClient {
       if (typeof answer !== "number") throw new Error();
       const point = row.point;
       if (typeof point !== "number") throw new Error();
-      const examineeAnswer = row.examinee_answer;
+      const examineeAnswer = row.examinee_answer ?? -1;
       if (typeof examineeAnswer !== "number") throw new Error();
 
       partToScores[uuid] ??= [0, 0];
