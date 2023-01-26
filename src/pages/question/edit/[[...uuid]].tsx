@@ -1,6 +1,6 @@
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
-import { createRef, forwardRef, memo, useCallback, useEffect, useId, useRef, useState } from "react";
+import { createRef, useEffect, useId, useRef } from "react";
 import styled from "styled-components";
 import { useFetcher } from "../../../api";
 import { QuestionPost, QuestionPut } from "../../../api-impl";

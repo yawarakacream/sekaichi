@@ -1,15 +1,13 @@
 import { GetServerSideProps } from "next";
 import Link from "next/link";
-import { useRouter } from "next/router";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import styled from "styled-components";
 import { connectDatabase } from "../../database";
 import { Examination, ExaminationScore, Tag, UUID } from "../../item-type";
 import { Card } from "../../layout/Card";
-import { BasicButton, LinkButton } from "../../layout/Input";
+import { LinkButton } from "../../layout/Input";
 import Layout, { PageTitle } from "../../layout/Layout";
 import { formatDate } from "../../utility";
-import examination from "../api/examination";
 
 export const percentToColor = (percent: number) => {
   const d = Math.floor(percent / 10) / 10;
