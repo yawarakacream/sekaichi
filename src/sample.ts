@@ -69,37 +69,53 @@ export namespace sample {
 
   export const examparts: Exampart[] = [
     {
-      uuid: "a1ca098f-edac-4179-8467-3621ca509bc3",
-      tags: ["39f0689a-9fdc-4886-8d0c-2e24c4686aa7", "a078ee26-50f0-4435-a468-689d35bda6e4"],
+      uuid: "8928ea7a-f3f4-49c9-8154-3e087b1e597b",
+      tags: ["a078ee26-50f0-4435-a468-689d35bda6e4"],
     },
     {
-      uuid: "5434059a-40e4-4c40-8b86-28856bb2db05",
-      tags: ["39f0689a-9fdc-4886-8d0c-2e24c4686aa7", "9945df35-84f9-4b4b-a49a-f348b383006b"],
+      uuid: "d1a60185-2c5a-4edd-9eea-fab87d356a47",
+      tags: ["cfbc8d38-e84d-4a62-9c3b-a6d91777f4f2"],
+    },
+    {
+      uuid: "c2e93d79-4844-427e-8581-bf0a2d58af37",
+      tags: ["eb3b25cd-e91b-4064-8e34-165efda3c6ad"],
     },
   ];
 
   export const examquestions: Examquestion[] = [
     {
-      exampart: examparts[0].uuid,
+      exampart: "d1a60185-2c5a-4edd-9eea-fab87d356a47",
       question: "69d191a5-a893-45ae-8d4b-02d381f58e44",
-      answerOrder: [3, 2, 1, 0],
+      answerOrder: [2, 3, 0, 1],
+      examineeAnswer: 2,
+    },
+    {
+      exampart: "c2e93d79-4844-427e-8581-bf0a2d58af37",
+      question: "19882e40-8b08-4f6a-9b70-97ff34b07c5c",
+      answerOrder: [0, 1, 3, 2],
+      examineeAnswer: 2,
+    },
+    {
+      exampart: "c2e93d79-4844-427e-8581-bf0a2d58af37",
+      question: "331eb805-e772-45d2-ba04-604014e5dbcc",
+      answerOrder: [3, 0, 2, 1],
       examineeAnswer: 1,
     },
     {
-      exampart: examparts[1].uuid,
+      exampart: "8928ea7a-f3f4-49c9-8154-3e087b1e597b",
       question: "0708c411-da03-402f-b38f-0d9c4391bbc2",
-      answerOrder: [3, 2, 1, 0],
+      answerOrder: [1, 0, 3, 2],
       examineeAnswer: 1,
     },
   ];
 
   export const examinations: Examination[] = [
     {
-      uuid: "35ee3d4d-f126-40e8-81fc-5e4e113fd6c2",
-      name: "いち",
+      uuid: "2e291fb7-bd3e-4b0b-8933-29e68c154740",
+      name: "2級 例題",
       excludedTags: ["3ce9f161-4e71-4b87-a775-cb7f5b12b2fa"],
       examparts: examparts,
-      answeredAt: 1640995200000,
+      answeredAt: 1640995200000 + diffOfDay * 7,
     },
   ];
 }

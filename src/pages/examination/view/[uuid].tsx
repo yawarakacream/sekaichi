@@ -122,7 +122,7 @@ export default function ExaminationViewPage({ tags, questions, examination, exam
                   }
                   footer={
                     <QuestionCardInfoContainer>
-                      <QuestionCardInfo>分野 {exampartUuidToIndex[examquestion.exampart]! + 1}</QuestionCardInfo>
+                      <QuestionCardInfo>大問 {exampartUuidToIndex[examquestion.exampart]! + 1}</QuestionCardInfo>
                       <QuestionCardInfo>配点 {question.point}</QuestionCardInfo>
                     </QuestionCardInfoContainer>
                   }

@@ -172,7 +172,6 @@ const MarubatsuOverlay = memo(({ type }: { type: "correct" | "incorrect" | undef
     if (!containerRef.current) throw new Error();
     setSize(Math.min(containerRef.current.offsetWidth, containerRef.current.offsetHeight));
   }, []);
-  console.log(size);
 
   useEffect(() => {
     updateSize();
@@ -319,7 +318,6 @@ const ArrowToPreviousButtonWrapper = styled.div<{ show: boolean }>`
 `;
 
 export const getServerSideProps: GetServerSideProps<Props> = async ({ params, query }) => {
-  console.log(query);
   const uuid = params?.uuid;
   if (typeof uuid !== "string") {
     return { notFound: true };
