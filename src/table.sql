@@ -36,7 +36,7 @@ CREATE TABLE examination_excludedtags(
   examination_uuid TEXT NOT NULL,
   tag_uuid TEXT NOT NULL,
   FOREIGN KEY (examination_uuid) REFERENCES examination(uuid) ON DELETE CASCADE,
-  FOREIGN KEY (tag_uuid) REFERENCES tag(uuid) ON DELETE RESTRICT
+  FOREIGN KEY (tag_uuid) REFERENCES tag(uuid) ON DELETE CASCADE
 );
 CREATE INDEX examination_excludedtags_index ON examination_excludedtags(examination_uuid, tag_uuid);
 
