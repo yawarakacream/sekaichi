@@ -92,7 +92,13 @@ export default function TagPage({ _tags }: Props) {
         <UpDownList array={tags} onDragDrop={mode === "view" ? undefined : moveTag}>
           {(tag, i) => (
             <TagContainer>
-              <TagName defaultValue={tag.name} disabled={mode !== "edit"} ref={tagNameInputElements.current[i]} />
+              <TagName
+                ref={tagNameInputElements.current[i]}
+                defaultValue={tag.name}
+                placeholder={tag.name}
+                disabled={mode !== "edit"}
+                required
+              />
               <TagInfo>
                 {mode === "edit" && tag.numberOfQuestions === 0 ? (
                   <DeleteButton value="削除" onClick={() => deleteTag(i)} />
@@ -105,7 +111,7 @@ export default function TagPage({ _tags }: Props) {
         </UpDownList>
         {mode === "edit" && (
           <TagContainer>
-            <TagName placeholder="新しいタグ" ref={newTagNameInputElement} />
+            <TagName ref={newTagNameInputElement} placeholder="新しいタグ" required />
             <TagInfo>
               <BasicButton value="追加" onClick={addNewTag} />
             </TagInfo>
@@ -123,7 +129,7 @@ export default function TagPage({ _tags }: Props) {
   );
 }
 
-const Container = styled.div<{ isFetching: boolean }>`
+const Container = styled.form<{ isFetching: boolean }>`
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -183,6 +189,10 @@ const TagName = styled.input.attrs({ type: "text" })`
     border-color: white;
     opacity: 1;
     -webkit-text-fill-color: black;
+  }
+
+  &:invalid {
+    border-bottom-color: red;
   }
 `;
 
