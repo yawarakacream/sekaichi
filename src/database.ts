@@ -107,9 +107,13 @@ class DatabaseClient {
 
     const currentTags = await this.getAllTags();
     await Promise.all(
-      currentTags
-        .filter((tag) => tags.every((t) => tag.uuid !== t.uuid))
-        .map((tag) => this.db.executeUpdate("DELETE FROM tag WHERE uuid = ?", [tag.uuid]))
+      currentTags.map(async (tag) => {
+        if (tags.some((t) => t.uuid === tag.uuid)) {
+          await this.db.executeUpdate("UPDATE tag SET idx = ? WHERE uuid = ?", [-(tag.index + 1), tag.uuid]);
+        } else {
+          await this.db.executeUpdate("DELETE FROM tag WHERE uuid = ?", [tag.uuid]);
+        }
+      })
     );
 
     await Promise.all(
