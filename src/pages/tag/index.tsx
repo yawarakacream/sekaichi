@@ -111,7 +111,7 @@ export default function TagPage({ _tags }: Props) {
         </UpDownList>
         {mode === "edit" && (
           <TagContainer>
-            <TagName ref={newTagNameInputElement} placeholder="新しいタグ" required />
+            <TagName ref={newTagNameInputElement} placeholder="新しいタグ" />
             <TagInfo>
               <BasicButton value="追加" onClick={addNewTag} />
             </TagInfo>
